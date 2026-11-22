@@ -205,12 +205,22 @@ public final class XposedInit {
 
     public static void loadLegacyModules() {
         var moduleList = VectorServiceClient.INSTANCE.getLegacyModules();
+        Log.i("VectorFork", "loadLegacyModules: " + moduleList.size() + " legacy module(s) for pid " + Process.myPid());
         moduleList.forEach(module -> {
             var apk = module.apkPath;
             var name = module.packageName;
             var file = module.code;
+            Log.i("VectorFork", "  candidate " + name + " apk=" + apk + " classes=" + file.moduleClassNames);
             loadedModules.put(name, Optional.of(apk)); // temporarily add it for XSharedPreference
-            if (!loadModule(name, apk, file)) {
+            boolean loaded;
+            try {
+                loaded = loadModule(name, apk, file);
+            } catch (Throwable t) {
+                Log.e("VectorFork", "  loadModule threw for " + name, t);
+                loaded = false;
+            }
+            Log.i("VectorFork", "  loadModule(" + name + ") = " + loaded);
+            if (!loaded) {
                 loadedModules.remove(name);
             }
         });
