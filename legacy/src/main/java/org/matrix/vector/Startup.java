@@ -1,5 +1,8 @@
 package org.matrix.vector;
 
+import android.os.Process;
+import android.util.Log;
+
 import org.matrix.vector.ipc.IFrameworkService;
 import org.matrix.vector.util.Utils;
 import org.matrix.vector.impl.core.VectorStartup;
@@ -13,9 +16,13 @@ public class Startup {
 
     public static void bootstrapXposed(boolean systemServerStarted) {
         try {
+            Log.i("VectorFork", "bootstrapXposed: pid=" + Process.myPid() + " systemServerStarted=" + systemServerStarted);
             VectorStartup.bootstrap(XposedInit.startsSystemServer, systemServerStarted);
+            Log.i("VectorFork", "bootstrapXposed: framework ready, loading legacy modules");
             XposedInit.loadLegacyModules();
+            Log.i("VectorFork", "bootstrapXposed: legacy modules loaded");
         } catch (Throwable t) {
+            Log.e("VectorFork", "bootstrapXposed failed", t);
             Utils.logE("Error during framework initialization", t);
         }
     }

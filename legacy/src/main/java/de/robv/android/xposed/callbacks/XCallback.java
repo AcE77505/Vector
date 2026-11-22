@@ -117,6 +117,16 @@ abstract public class XCallback {
             // deopt methods in system apps or priv-apps, this would be not necessary
             // only if we found out how to recompile their apks
             XC_LoadPackage.LoadPackageParam lpp = (XC_LoadPackage.LoadPackageParam) param;
+            android.util.Log.i(
+                    "VectorFork",
+                    "callAll LoadPackage pkg="
+                            + lpp.packageName
+                            + " proc="
+                            + lpp.processName
+                            + " callbacks="
+                            + (param.callbacks == null ? -1 : param.callbacks.length)
+                            + " pid="
+                            + android.os.Process.myPid());
             VectorDeopter.deoptMethods(lpp.packageName, lpp.classLoader);
         }
 
@@ -125,8 +135,10 @@ abstract public class XCallback {
 
         for (int i = 0; i < param.callbacks.length; i++) {
             try {
+                android.util.Log.i("VectorFork", "  invoke[" + i + "] " + param.callbacks[i].getClass().getName());
                 param.callbacks[i].call(param);
             } catch (Throwable t) {
+                android.util.Log.e("VectorFork", "  callback[" + i + "] threw", t);
                 XposedBridge.log(t);
             }
         }

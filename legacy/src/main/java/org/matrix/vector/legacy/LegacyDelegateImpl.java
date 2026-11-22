@@ -35,6 +35,18 @@ public class LegacyDelegateImpl implements LegacyFrameworkDelegate {
 
     @Override
     public void onPackageLoaded(LegacyPackageInfo info) {
+        android.util.Log.i(
+                "VectorFork",
+                "onPackageLoaded pkg="
+                        + info.getPackageName()
+                        + " proc="
+                        + info.getProcessName()
+                        + " first="
+                        + info.isFirstApplication()
+                        + " classLoader="
+                        + info.getClassLoader()
+                        + " callbacks="
+                        + XposedBridge.sLoadedPackageCallbacks.size());
         XC_LoadPackage.LoadPackageParam lpparam = new XC_LoadPackage.LoadPackageParam(XposedBridge.sLoadedPackageCallbacks);
         lpparam.packageName = info.getPackageName();
         lpparam.processName = info.getProcessName();
