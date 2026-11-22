@@ -31,7 +31,19 @@ public interface IXposedHookLoadPackage extends IXposedMod {
         }
         @Override
         public void handleLoadPackage(LoadPackageParam lpparam) throws Throwable {
-            instance.handleLoadPackage(lpparam);
+            android.util.Log.i(
+                    "VectorFork",
+                    "module " + instance.getClass().getName()
+                            + " handleLoadPackage pkg=" + lpparam.packageName
+                            + " proc=" + lpparam.processName
+                            + " pid=" + android.os.Process.myPid());
+            try {
+                instance.handleLoadPackage(lpparam);
+            } catch (Throwable t) {
+                android.util.Log.e(
+                        "VectorFork", "module " + instance.getClass().getName() + " threw", t);
+                throw t;
+            }
         }
     }
 }
