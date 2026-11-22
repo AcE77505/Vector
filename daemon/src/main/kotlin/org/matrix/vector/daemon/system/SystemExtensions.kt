@@ -12,6 +12,7 @@ import android.content.pm.ResolveInfo
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IUserManager
+import org.matrix.vector.daemon.data.ForkLog
 import android.util.Log
 import java.io.File
 import java.lang.reflect.Method
@@ -275,7 +276,11 @@ fun IActivityManager.registerReceiverCompat(
     userId: Int,
     flags: Int
 ): Intent? {
-  val appThread = SystemContext.appThread ?: return null
+  val appThread = SystemContext.appThread
+  if (appThread == null) {
+    ForkLog.append("registerReceiver", "SKIPPED (appThread is null) filter=$filter userId=$userId")
+    return null
+  }
   return runCatching {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
           registerReceiverWithFeature(
@@ -296,7 +301,10 @@ fun IActivityManager.registerReceiverCompat(
               appThread, "android", receiver, filter, requiredPermission, userId, flags)
         }
       }
-      .onFailure { Log.e(TAG, "registerReceiver failed", it) }
+      .onFailure {
+        Log.e(TAG, "registerReceiver failed", it)
+        ForkLog.append("registerReceiver", "FAILED filter=$filter userId=$userId ${it.javaClass.simpleName}: ${it.message}")
+      }
       .getOrNull()
 }
 

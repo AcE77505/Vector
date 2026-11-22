@@ -176,6 +176,7 @@ object ConfigCache {
         if (pkgName == "lspd") return@forEach
 
         val oldModule = oldState.modules[pkgName]
+        ForkLog.append("cache", "EVAL $pkgName dbPath=$apkPath cached=${oldModule != null}")
 
         var pkgInfo: android.content.pm.PackageInfo? = null
         val users = userManager?.getRealUsers() ?: emptyList()
@@ -268,9 +269,11 @@ object ConfigCache {
           // module the user did enable, and they would find the switch off with no reason given.
           // The configuration stands; what could not be done is recorded and reported instead.
           Log.w(TAG, "Failed to find path of $pkgName")
+          ForkLog.append("cache", "NO_APK_ENTRY $pkgName sourceDir=${appInfo?.sourceDir}")
           unloadable[pkgName] = IManagerService.MODULE_LOAD_NO_APK
           return@forEach
         }
+        ForkLog.append("cache", "RESOLVED $pkgName -> $realApkPath")
         apkPath = realApkPath
         obsoletePaths[pkgName] = realApkPath
 
@@ -296,6 +299,7 @@ object ConfigCache {
                   service = oldModule?.service ?: InjectedModuleService(pkgName)
                   code = loaded.apk
                 }
+            ForkLog.append("cache", "LOADED $pkgName legacy=${loaded.apk.legacy} apk=$apkPath")
             newModules[pkgName] = module
           }
           // As above: a module the framework will not load is broken, not unwanted.
@@ -306,10 +310,12 @@ object ConfigCache {
           // than reported as "the framework could not load it" alongside a zip that will not parse.
           ModuleLoad.UnsupportedApi -> {
             Log.w(TAG, "Could not load $pkgName: it targets libxposed API 100; skipping.")
+            ForkLog.append("cache", "UNSUPPORTED_API $pkgName")
             unloadable[pkgName] = IManagerService.MODULE_LOAD_UNSUPPORTED_API
           }
           ModuleLoad.Unusable -> {
             Log.w(TAG, "Could not load $pkgName; skipping.")
+            ForkLog.append("cache", "UNUSABLE $pkgName apk=$apkPath")
             unloadable[pkgName] = IManagerService.MODULE_LOAD_UNUSABLE
           }
         }

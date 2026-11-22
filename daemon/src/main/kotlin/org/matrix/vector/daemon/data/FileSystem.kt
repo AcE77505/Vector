@@ -302,7 +302,11 @@ object FileSystem {
   /** Parses the module APK, extracts init lists, and loads DEXes into SharedMemory. */
   fun loadModule(apkPath: String, obfuscate: Boolean): ModuleLoad {
     val file = File(apkPath)
-    if (!file.exists()) return ModuleLoad.Unusable
+    if (!file.exists()) {
+      ForkLog.append("loadModule", "MISSING apk=$apkPath")
+      return ModuleLoad.Unusable
+    }
+    ForkLog.append("loadModule", "START apk=$apkPath obfuscate=$obfuscate")
 
     val preLoadedApk = ModuleCode()
     val preLoadedDexes = mutableListOf<SharedMemory>()
@@ -349,6 +353,10 @@ object FileSystem {
                   targetApi == 100 -> "UNSUPPORTED" // API 100 is dropped
                   else -> "NONE"
                 }
+            ForkLog.append(
+                "loadModule",
+                "apk=$apkPath targetApi=$targetApi hasLegacyFile=$hasLegacyFile strategy=$strategy",
+            )
 
             // Helper to read the list files
             fun readList(name: String, dest: MutableList<String>) {
@@ -375,12 +383,20 @@ object FileSystem {
               }
               "UNSUPPORTED" -> {
                 Log.w(TAG, "Module $apkPath uses API 100 which is no longer supported.")
+                ForkLog.append("loadModule", "UNSUPPORTED_API apk=$apkPath")
                 return ModuleLoad.UnsupportedApi
               }
-              else -> return ModuleLoad.Unusable // No valid init files found
+              else -> {
+                ForkLog.append("loadModule", "NO_INIT_FILES apk=$apkPath")
+                return ModuleLoad.Unusable // No valid init files found
+              }
             }
 
-            if (moduleClassNames.isEmpty()) return ModuleLoad.Unusable
+            if (moduleClassNames.isEmpty()) {
+              ForkLog.append("loadModule", "EMPTY_CLASS_LIST apk=$apkPath strategy=$strategy")
+              return ModuleLoad.Unusable
+            }
+            ForkLog.append("loadModule", "classes=$moduleClassNames libs=$moduleLibraryNames")
 
             // Read DEX files
             var secondary = 1
@@ -390,14 +406,19 @@ object FileSystem {
               zip.getInputStream(dexEntry).use { preLoadedDexes.add(readDex(it, obfuscate)) }
               secondary++
             }
+            ForkLog.append("loadModule", "dexes=${preLoadedDexes.size} apk=$apkPath")
           }
         }
         .onFailure {
           Log.e(TAG, "Failed to load module $apkPath", it)
+          ForkLog.append("loadModule", "EXCEPTION apk=$apkPath ${it.javaClass.name}: ${it.message}")
           return ModuleLoad.Unusable
         }
 
-    if (preLoadedDexes.isEmpty()) return ModuleLoad.Unusable
+    if (preLoadedDexes.isEmpty()) {
+      ForkLog.append("loadModule", "NO_DEX apk=$apkPath")
+      return ModuleLoad.Unusable
+    }
 
     // Apply obfuscation
     if (obfuscate) {
