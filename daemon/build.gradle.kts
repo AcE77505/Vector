@@ -49,7 +49,7 @@ android {
   }
 
   buildTypes {
-    all { externalNativeBuild { cmake { arguments += "-DANDROID_ALLOW_UNDEFINED_SYMBOLS=true" } } }
+    all { externalNativeBuild { cmake { arguments += "-DANDROID_ALLOW_UNDEFINED_SYMBOLS=true"; arguments += "-DCMAKE_CXX_SCAN_FOR_MODULES=OFF" } } }
     release {
       isMinifyEnabled = true
       proguardFiles("proguard-rules.pro")

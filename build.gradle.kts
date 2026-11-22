@@ -303,6 +303,12 @@ subprojects {
                     listOf(
                         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
                         "-DVECTOR_ROOT=${rootDir.absolutePath}",
+                        // GitHub's runner image moved to a toolchain whose libstdc++ ships a
+                        // `bits/std.cc` interface unit for C++23. CMake's implicit module
+                        // scanning then tries to scan that host header with the NDK clang,
+                        // which cannot find `bits/stdc++.h` in the Android sysroot, and the
+                        // build dies in external/fmt before compiling anything of ours.
+                        "-DCMAKE_CXX_SCAN_FOR_MODULES=OFF",
                         // Enforce 16 KB page size alignment for Android 15+ compatibility
                         "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=16384",
                         "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384",
